@@ -1,0 +1,60 @@
+pragma solidity ^0.4.17;
+contract seller {
+   mapping (address => bool) public reviewers;
+   mapping (address=>bool) public sellers;
+    uint c=0;
+    struct item{
+        string name;
+        string condition;
+        uint price;
+    }
+    mapping(uint=>item) itemsmp;
+    //address[]public itemsList;
+    
+    uint[]public ce;
+    function additem(address ad,string _name,string _con,uint p) public {
+      require(sellers[ad]==true);
+      itemsmp[c]=item(_name,_con,p);
+      c++;
+    }
+    
+    //validation of reviewers
+    function becomereviewer()public payable{
+        require(msg.value>.01 ether );//some minium amt of ether (in term of wei)
+       reviewers[msg.sender]=true;
+        
+    }
+    
+    //validation of sellers
+    function becomeseller ()public payable{
+        require(msg.value>.01 ether);
+        sellers[msg.sender]=true;
+    }
+    
+    
+    
+    function getitemdetail(uint _i) view public returns (string,string,uint)
+    {
+        return (itemsmp[_i].name,itemsmp[_i].condition,itemsmp[_i].price);
+    }
+    
+    function costestimate(address ad,uint pid,uint estimated_price) public{
+        require(reviewers[ad]==true);
+        uint c=itemsmp[pid].price;
+        ce.push(estimated_price);
+    }
+    
+    function finalcost(uint pi)view public returns(string,uint)
+    {
+        uint fc=0;
+        for(uint i=0;i<ce.length;i++)
+        {
+            fc=fc+ce[i];
+        }
+        
+        fc=fc/ce.length;
+        //itemsmp[pi].price=fc;   
+        return (itemsmp[pi].name,fc);
+    }
+    
+}
