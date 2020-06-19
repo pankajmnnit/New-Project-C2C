@@ -1,60 +1,160 @@
+   
 pragma solidity ^0.4.17;
-contract seller {
-   mapping (address => bool) public reviewers;
-   mapping (address=>bool) public sellers;
-    uint c=0;
-    struct item{
+   contract c2c {
+    //reviwer of products
+     struct reviewer{
+         string name;
+         string product_category;
+         uint F_score;
+         uint exp;
+         uint total_reviews;
+         uint total_correct_reviews;
+         uint rid; //unique id of reviewer
+     }
+     uint total_reviwes_system=0;
+    //seller of product
+     struct seller{
+         string name;
+         uint sid; //unique id of seller
+     }
+    //each product description
+     struct item{
         string name;
         string condition;
         uint price;
+        bool bill_status;
+        string dop;
+        uint pid; //product id
     }
-    mapping(uint=>item) itemsmp;
-    //address[]public itemsList;
+    //each cost estimation cost,f1_score
     
-    uint[]public ce;
-    function additem(address ad,string _name,string _con,uint p) public {
-      require(sellers[ad]==true);
-      itemsmp[c]=item(_name,_con,p);
-      c++;
+   //store all estimated cost info
+   struct pred{
+       uint ec;
+   }
+   mapping(uint=>pred[]) all_pred_cost_data;
+   
+     item [] public productlist;  //store list of all product
+    
+    uint c=0;
+    //store reviwers info
+    mapping (address =>reviewer) public reviewers; //hash table for reviewers
+    address[] public reviwer_address;  //store all reviewers address
+    //store seller info
+    mapping (address=>seller) public sellers;
+    address[] public seller_address; // store all sellers address
+    //items array info 
+ 
+    //array to hold cost prediction of each item
+    
+    uint[] public res;
+    
+    //validation and addition  of reviewers to network
+    function become_reviewer(string memory _name,string memory  _product_category, uint exp,uint fscore)public payable{
+        require(msg.value>.01 ether);//some minium amt of ether (in term of wei)
+        require(exp>5); //exp but must be checked by external call
+        reviewer memory new_rev;
+        new_rev.name=_name;
+        new_rev.F_score=fscore;
+        new_rev.exp=exp;
+        reviewers[msg.sender]=new_rev;
+        reviwer_address.push(msg.sender)-1; // keeping track of all reviewers
     }
     
-    //validation of reviewers
-    function becomereviewer()public payable{
-        require(msg.value>.01 ether );//some minium amt of ether (in term of wei)
-       reviewers[msg.sender]=true;
-        
-    }
-    
-    //validation of sellers
-    function becomeseller ()public payable{
-        require(msg.value>.01 ether);
-        sellers[msg.sender]=true;
+    //validation and addition  of sellers to network
+    function become_seller(string memory _name)public payable{
+        require(msg.value>.01 ether);//some minium amt of ether (in term of wei)
+        seller memory new_sell;
+        new_sell.name=_name;
+        sellers[msg.sender]=new_sell;
+       seller_address.push(msg.sender)-1; // keeping track of all sellers
     }
     
     
-    
-    function getitemdetail(uint _i) view public returns (string,string,uint)
-    {
-        return (itemsmp[_i].name,itemsmp[_i].condition,itemsmp[_i].price);
-    }
-    
-    function costestimate(address ad,uint pid,uint estimated_price) public{
-        require(reviewers[ad]==true);
-        uint c=itemsmp[pid].price;
-        ce.push(estimated_price);
-    }
-    
-    function finalcost(uint pi)view public returns(string,uint)
-    {
-        uint fc=0;
-        for(uint i=0;i<ce.length;i++)
-        {
-            fc=fc+ce[i];
+    // add new items by seller
+    function add_item(string memory _name, string memory _condition, uint price ,bool _bill_status , string memory _dop ,string memory _pid,address _selleradd){
+        //check if seller is registerd or not
+        uint check=0;
+        for(uint i=0;i<seller_address.length;i++){
+            
+            if(seller_address[i]==_selleradd){
+                check=1;
+                break;
+            }
+            
         }
+        bool confirm_identity;
+        if(check==0)
+        {
+            confirm_identity=false;
+        }
+        else
+        {
+            confirm_identity=true;
+        }
+        require(confirm_identity==true);// checking if seller is registerd or not 
         
-        fc=fc/ce.length;
-        //itemsmp[pi].price=fc;   
-        return (itemsmp[pi].name,fc);
+        //add new item to items list
+        item memory new_item;
+        new_item.name=_name;
+        new_item.condition=_condition;
+        new_item.price=price;
+        new_item.dop=_dop;
+        new_item.pid=c;
+        c=c+1;
+        productlist.push(new_item); //making list of all products
     }
     
-}
+    
+    //give review by reviwers
+    function add_review(uint pd,uint ec)
+    {
+        address temp=msg.sender;
+        //seraching for reviwer f1_score
+        for(uint i=0;i<reviwer_address.length;i++)
+        {
+            if(reviwer_address[i]==temp)
+            {
+                reviewer ry=reviewers[temp];
+                uint f1_score=ry.F_score;
+                uint v=f1_score*ec; //weighted value
+                pred memory final_cost=pred(v);
+                all_pred_cost_data[pd].push(final_cost);
+                break;
+            }
+        }
+    }
+    
+    //estimate cost of product
+    function costestimate(uint pid)
+    {
+        pred[]  temp=all_pred_cost_data[pid];
+        uint S=0;
+        for(uint i=0;i<reviwer_address.length;i++)
+        {
+           reviewer x= reviewers[reviwer_address[i]];
+           S=S+x.F_score;
+        }
+        uint k=0;
+        uint sum=S-(reviewers[reviwer_address[0]].F_score);
+        while(sum>S/2)
+        {
+            k++;
+            sum=sum-(reviewers[reviwer_address[k]].F_score);
+        }
+    res.push(temp[k].ec);
+     
+    }
+    
+    //rating update model
+    function upadte_rating(uint est_cost)
+    {
+        for(uint i=0;i<reviwer_address.length;i++)
+        {
+             reviewer x= reviewers[reviwer_address[i]];
+        }
+    }
+    
+    
+    
+   }
