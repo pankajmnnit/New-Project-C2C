@@ -147,12 +147,16 @@ pragma solidity ^0.4.17;
     }
     
     //rating update model
-    function upadte_rating(uint est_cost)
+    function update_rating(uint est_cost)
     {
+         reviewer x;
         for(uint i=0;i<reviwer_address.length;i++)
         {
-             reviewer x= reviewers[reviwer_address[i]];
+              x= reviewers[reviwer_address[i]];
         }
+        //return updated rating 
+        
+  
     }
     
     
